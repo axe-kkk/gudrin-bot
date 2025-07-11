@@ -1,0 +1,13 @@
+app = 'gudrin'
+primary_region = 'waw'
+
+[build]
+
+[processes]
+  app = "python bot.py"  # или твоя команда запуска бота
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
