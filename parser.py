@@ -1,5 +1,5 @@
+import math
 import re
-
 import requests
 import random
 import string
@@ -32,6 +32,45 @@ def generate_fake_user():
         "password": password
     }
 
+def calculate_viral_score(views, likes, comments, reposts):
+    """
+    Принимает views, likes, comments, reposts как int или str (с запятыми),
+    возвращает float в диапазоне 0–10.
+    """
+    try:
+        # Приводим к int (удаляем запятые, пробелы)
+        P = int(str(views).replace(",", "").replace(" ", ""))
+        L = int(str(likes).replace(",", "").replace(" ", ""))
+        C = int(str(comments).replace(",", "").replace(" ", ""))
+        R = int(str(reposts).replace(",", "").replace(" ", ""))
+    except ValueError:
+        # Если не смогли преобразовать — возвращаем 0
+        return 0.0
+
+    if P == 0:
+        return 0.0  # защита от деления на ноль
+
+    # Доли
+    like_ratio    = L / P
+    comment_ratio = C / P
+    repost_ratio  = R / P
+
+    # Взвешенная сумма
+    raw_score = (
+        like_ratio    * 0.35 +
+        comment_ratio * 0.15 +
+        repost_ratio  * 0.5
+    )
+
+    # Нелинейное масштабирование + подгонка под 10-балльную шкалу
+    viral_score = 10 * (raw_score ** 0.55) * 6.5
+
+    # Округляем и ограничиваем максимумом 10
+    return round(min(viral_score, 10), 2)
+
+
+
+
 def register_and_extract(request: str):
     session = requests.Session()
     user = generate_fake_user()
@@ -53,7 +92,6 @@ def register_and_extract(request: str):
     print("✅ Регистрация статус:", resp.status_code)
 
     ban_symbols = set(r"""./\,:;'"!?@#$%^&*()[]{}<>~`+=|""")
-
     cleaned = ''.join(char for char in request if char not in ban_symbols)
     words = cleaned.split()
     formatted = ''.join(word.capitalize() for word in words)
@@ -78,55 +116,42 @@ def register_and_extract(request: str):
             start = end_args + 1
             continue
 
+        views = args[-8]
+        likes = args[-7]
+        comments = args[-6]
+        reposts = args[-5]
+        saves = args[-4]
+        er = args[-2]
+        cr = args[-1]
+        short_id = args[-3]
+
+        viral_score = calculate_viral_score(views, likes, comments, reposts)
+
+        if viral_score < 1:
+            start = end_args + 1
+            continue
+
         i += 1
         print(f"\n🎞️ Видео #{i}")
-        print(f"👁️ Views: {args[-8]}, ❤️ Likes: {args[-7]}, 💬 Comments: {args[-6]}")
-        print(f"🔁 Reposts: {args[-5]}, 💾 Saves: {args[-4]}")
-        print(f"🧠 Engagement Rate per View: {args[-2]}, Conversion Rate per View: {args[-1]}")
-        print(f"📎 Instagram: https://www.instagram.com/reel/{args[-3]}")
+        print(f"👁️ Views: {views}, ❤️ Likes: {likes}, 💬 Comments: {comments}")
+        print(f"🔁 Reposts: {reposts}, 💾 Saves: {saves}")
+        print(f"🧠 ER/View: {er}, 📈 CR/View: {cr}")
+        print(f"📊 Viral Score: {viral_score}/10")
+        print(f"📎 Instagram: https://www.instagram.com/reel/{short_id}")
+
+        res.append({
+            "views": views,
+            "likes": likes,
+            "comments": comments,
+            "reposts": reposts,
+            "saves": saves,
+            "er": er,
+            "cr": cr,
+            "short_id": short_id,
+            "viral_score": viral_score
+        })
 
         start = end_args + 1
-        start = html.find('<span class="text-white opacity-30">', start)
-        if start == -1:
-            break
-
-        start_args = html.find(">", start) + 1
-        end_args = html.find("<", start_args)
-        args_raw = html[start_args:end_args]
-        args_ = args_raw.split(" ")
-
-        if len(args_) >= 2 and args_[1] == "m":
-            if int(args_[0]) > 1:
-                print(False)
-            else:
-                print(True)
-                res.append({
-                    "views": args[-8],
-                    "likes": args[-7],
-                    "comments": args[-6],
-                    "reposts": args[-5],
-                    "saves": args[-4],
-                    "er": args[-2],
-                    "cr": args[-1],
-                    "short_id": args[-3],
-                })
-        else:
-            print(True)
-            res.append({
-                "views": args[-8],
-                "likes": args[-7],
-                "comments": args[-6],
-                "reposts": args[-5],
-                "saves": args[-4],
-                "er": args[-2],
-                "cr": args[-1],
-                "short_id": args[-3],
-            })
-
-        start = end_args + 1
-
-
-
 
 if __name__ == "__main__":
     register_and_extract("Veo }| 3")

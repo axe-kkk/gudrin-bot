@@ -8,11 +8,9 @@ router = Router()
 
 @router.message(Command("menu"))
 async def start(message: Message):
-    image = FSInputFile("images/start_menu.png")
 
-    await message.answer_photo(
-        photo=image,
-        caption=menu_first_time_message,
+    await message.answer(
+        text=menu_first_time_message,
         parse_mode="HTML",
         reply_markup=start_menu
     )

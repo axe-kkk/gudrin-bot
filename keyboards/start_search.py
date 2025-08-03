@@ -6,11 +6,18 @@ start_search = InlineKeyboardMarkup(
             InlineKeyboardButton(
                 text="🔍 Начать искать за 1 🪙",
                 callback_data="search"
-            )],
+            )
+        ],
         [
             InlineKeyboardButton(
                 text="🔍 Начать искать за 1 💎",
                 callback_data="search_d"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="❌ Закрыть",
+                callback_data="back"
             )
         ]
     ]

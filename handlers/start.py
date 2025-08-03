@@ -1,7 +1,6 @@
 # handlers/start.py
-
 from aiogram import Router
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message
 from bot_texts import start_message, menu_first_time_message
 from keyboards.start_continue import start_continue_keyboard
 from models.user import User
@@ -14,8 +13,6 @@ from aiogram.filters import CommandStart, CommandObject
 
 
 router = Router()
-
-
 
 
 async def handle_start(message: Message, referrer_id: str | None):
@@ -43,10 +40,8 @@ async def handle_start(message: Message, referrer_id: str | None):
         else:
             logger.info(f"User already exists: tg_id={telegram_id}, username={username}")
 
-    image = FSInputFile("images/welcome.png")
-    await message.answer_photo(
-        photo=image,
-        caption=start_message,
+    await message.answer(
+        text=start_message,
         parse_mode="HTML",
         reply_markup=start_continue_keyboard,
     )
@@ -61,6 +56,7 @@ async def start_with_ref(message: Message, command: CommandObject):
 async def start_no_ref(message: Message):
     await handle_start(message, None)
 
+
 @router.callback_query(lambda c: c.data == "continue_main_menu")
 async def show_main_menu(callback: CallbackQuery):
     try:
@@ -68,16 +64,9 @@ async def show_main_menu(callback: CallbackQuery):
     except Exception as e:
         pass
 
-    image = FSInputFile("images/start_menu.png")
-
-    await callback.message.answer_photo(
-        photo=image,
-        caption=menu_first_time_message,
+    await callback.message.answer(
+        text=menu_first_time_message,
         parse_mode="HTML",
         reply_markup=start_menu
     )
     await callback.answer()
-
-
-
-

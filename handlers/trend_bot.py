@@ -23,9 +23,9 @@ class SearchState(StatesGroup):
 @router.message(F.text == "📊 Trend Bot")
 async def referral_info(message: Message):
         await message.answer(
-        "<b>🔍 Готов искать тренды?</b>\n"
-            "Введи любую тему — и получи 🔥 самые популярные видео прямо сейчас.\n"
-            "<b>Плати коинами, смотри, вдохновляйся!</b>",
+        "<b>🔍 Готов искать тренды?</b>\n\n"
+            "Введи короткий запрос и получи 🔥 подборку самых популярных видео прямо сейчас.\n\n"
+            "<b>Используй коины и кради твори как художник!</b>",
             parse_mode="HTML",
             reply_markup=start_search
         )
@@ -141,19 +141,20 @@ async def handle_trend_query(message: Message, state: FSMContext):
         pass
 
     if results:
-        await progress_msg.edit_text("<b>Вот что нашлось по запросу:</b>", parse_mode="HTML")
+        await progress_msg.edit_text("<b>Вот что нашел Тренд Бот по твоему запросу:</b>", parse_mode="HTML")
 
         for res in results:
             try:
                 await message.answer(
-                    f"🎬 <b>Видео</b>\n"
+                    f"🎬 <b>Видео</b>\n\n"
                     f"👁️ Просмотры: {res['views']}\n"
                     f"❤️ Лайки: {res['likes']}\n"
                     f"💬 Комментарии: {res['comments']}\n"
                     f"🔁 Репосты: {res['reposts']}\n"
                     f"💾 Сохранили: {res['saves']}\n"
                     f"🧠 ER/View: {res['er']}\n"
-                    f"📈 CR/View: {res['cr']}\n"
+                    f"📈 CR/View: {res['cr']}\n\n"
+                    f"📈 Оценка вирусности: {res['viral_score']}/10\n\n"
                     f"📎 <a href='https://www.instagram.com/reel/{res['short_id']}'>Смотреть в Instagram</a>",
                     parse_mode="HTML"
                 )

@@ -9,7 +9,7 @@ from aiogram.types import LabeledPrice, PreCheckoutQuery
 
 router = Router()
 CURRENCY = 'XTR'
-STAR_PER_COIN = 5
+STAR_PER_COIN = 25
 
 from aiogram.types import CallbackQuery
 
@@ -29,7 +29,9 @@ async def show_balance_callback(callback: CallbackQuery):
             f"💰 Ваш текущий баланс:\n"
             f"{user.coins} 🪙\n"
             f"{user.diamonds} 💎\n\n"
-            f"⭐️ Курс 🪙 к Telegram Stars (XTR): 5 ⭐️ = 1 🪙",
+            f"Курс 🪙 к Телеграм Звёздам: \n\n"
+            "25 ⭐️ = 1 🪙",
+            parse_mode="HTML",
             reply_markup=keyboard
         )
 
@@ -49,7 +51,9 @@ async def show_balance_message(message: Message):
             f"💰 Ваш текущий баланс:\n"
             f"{user.coins} 🪙\n"
             f"{user.diamonds} 💎\n\n"
-            f"⭐️ Курс 🪙 к Telegram Stars (XTR): 5 ⭐️ = 1 🪙",
+            f"Курс 🪙 к Телеграм Звёздам: \n\n"
+            "25 ⭐️ = 1 🪙",
+            parse_mode="HTML",
             reply_markup=keyboard
         )
 
@@ -57,10 +61,10 @@ async def show_balance_message(message: Message):
 
 def coins_purchase_keyboard():
     builder = InlineKeyboardBuilder()
-    builder.button(text="10 🪙 — 50 ⭐️", callback_data="buy:10")
-    builder.button(text="50 🪙 — 250 ⭐️", callback_data="buy:50")
-    builder.button(text="100 🪙 — 500 ⭐️", callback_data="buy:100")
-    builder.button(text="200 🪙 — 1000 ⭐️", callback_data="buy:200")
+    builder.button(text="10 🪙 ⮕ 250 ⭐️", callback_data="buy:10")
+    builder.button(text="25 🪙 ⮕ 625 ⭐️", callback_data="buy:25")
+    builder.button(text="50 🪙 ⮕ 1250 ⭐️", callback_data="buy:50")
+    builder.button(text="100 🪙 ⮕ 2500 ⭐️", callback_data="buy:100")
     builder.button(text="❌ Закрыть", callback_data="close_purchase")
     builder.adjust(1)
     return builder.as_markup()
@@ -70,7 +74,12 @@ def coins_purchase_keyboard():
 async def show_buy_options(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(
-        "Выберите количество 🪙, которое хотите приобрести:",
+        "1 коин ⮕ 1 запрос тренда\n\n"
+        "Выберите количество 🪙, которое хотите приобрести:\n\n"
+        "<blockquote>73% пользователей выбирают покупку 50 🪙 и получают бонусные 10 на баланс! 🎁\n"
+        "\n"
+        "При покупке 100 🪙 +20 на баланс бесплатно. 🎁🎁</blockquote>",
+        parse_mode="HTML",
         reply_markup=coins_purchase_keyboard()
     )
 
@@ -102,6 +111,7 @@ async def process_buy_selection(callback: CallbackQuery, bot: Bot):
 
 @router.callback_query(F.data == "close_purchase")
 @router.callback_query(F.data == "close_referral")
+@router.callback_query(F.data == "back")
 async def close_message(callback: CallbackQuery):
     await callback.message.delete()
     await callback.answer()
