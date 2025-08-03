@@ -1,10 +1,12 @@
+# fly.toml app configuration file generated for gudrin on 2025-07-11T17:56:24Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'gudrin'
 primary_region = 'waw'
 
 [build]
-
-[processes]
-  app = "python bot.py"  # или твоя команда запуска бота
 
 [[vm]]
   memory = '1gb'
