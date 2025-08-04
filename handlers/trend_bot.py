@@ -5,6 +5,7 @@ from aiogram import Router, F
 from aiogram.types import Message
 from keyboards.need_coins import need
 from keyboards.start_search import start_search
+from keyboards.trending_topics import trending_topics_kb
 from models.user import User
 from database import async_session_maker
 from sqlmodel import select
@@ -55,8 +56,10 @@ async def close_referral_message(callback: CallbackQuery, state: FSMContext):
             await session.commit()
 
     await callback.message.answer(
-        "✏️ Введи тему, по которой хочешь получить трендовые видео:",
-        parse_mode="HTML"
+        "✏️ Введи тему, по которой хочешь получить трендовые видео:\n\n"
+        "Или выбери из популярных тем ниже 👇",
+        parse_mode="HTML",
+        reply_markup=trending_topics_kb()
     )
     await state.set_state(SearchState.waiting_for_query)
     await callback.answer()
@@ -86,16 +89,28 @@ async def close_referral_message(callback: CallbackQuery, state: FSMContext):
             await session.commit()
 
     await callback.message.answer(
-        "✏️ Введи тему, по которой хочешь получить трендовые видео:",
-        parse_mode="HTML"
+        "✏️ Введи тему, по которой хочешь получить трендовые видео:\n\n"
+        "Или выбери из популярных тем ниже 👇",
+        parse_mode="HTML",
+        reply_markup=trending_topics_kb()
     )
     await state.set_state(SearchState.waiting_for_query)
     await callback.answer()
 
 
-@router.message(SearchState.waiting_for_query)
-async def handle_trend_query(message: Message, state: FSMContext):
-    query = message.text.strip()
+@router.callback_query(F.data.startswith("topic:"))
+async def handle_topic_choice(callback: CallbackQuery, state: FSMContext):
+    topic = callback.data.split(":", 1)[1]
+
+    await callback.message.delete()
+    await callback.message.answer(f"🔍 Вы выбрали тему: <b>{topic}</b>", parse_mode="HTML")
+
+    await run_query(callback.message, topic, state)
+    await callback.answer()
+
+
+async def run_query(message: Message, query: str, state: FSMContext):
+    query = query.strip()
 
     progress_msg = await message.answer("🔍 Начинаю работу...")
 
@@ -126,14 +141,11 @@ async def handle_trend_query(message: Message, state: FSMContext):
         except Exception:
             pass
 
-    # Запускаем прогресс-анимацию
     animation_task = asyncio.create_task(show_progress(progress_msg))
 
-    # Основная работа в фоне
     loop = asyncio.get_event_loop()
     results = await loop.run_in_executor(None, register_and_extract, query)
 
-    # Завершаем прогресс
     animation_task.cancel()
     try:
         await animation_task
@@ -160,6 +172,7 @@ async def handle_trend_query(message: Message, state: FSMContext):
                 )
             except Exception as e:
                 await message.answer(f"⚠️ Ошибка при разборе одного из видео: {e}")
+        await state.clear()
     else:
         await progress_msg.edit_text("😕 Ничего не нашлось по этой теме. Попробуй другую формулировку.")
         async with async_session_maker() as session:
@@ -167,7 +180,6 @@ async def handle_trend_query(message: Message, state: FSMContext):
                 select(User).where(User.telegram_id == message.from_user.id)
             )
             me = user.first()
-
             if me.flag:
                 me.coins += 1
             else:
@@ -175,4 +187,7 @@ async def handle_trend_query(message: Message, state: FSMContext):
             session.add(me)
             await session.commit()
 
-    await state.clear()
+
+@router.message(SearchState.waiting_for_query)
+async def handle_trend_query(message: Message, state: FSMContext):
+    await run_query(message, message.text, state)

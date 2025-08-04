@@ -33,41 +33,29 @@ def generate_fake_user():
     }
 
 def calculate_viral_score(views, likes, comments, reposts):
-    """
-    Принимает views, likes, comments, reposts как int или str (с запятыми),
-    возвращает float в диапазоне 0–10.
-    """
     try:
-        # Приводим к int (удаляем запятые, пробелы)
-        P = int(str(views).replace(",", "").replace(" ", ""))
+        V = int(str(views).replace(",", "").replace(" ", ""))
         L = int(str(likes).replace(",", "").replace(" ", ""))
         C = int(str(comments).replace(",", "").replace(" ", ""))
         R = int(str(reposts).replace(",", "").replace(" ", ""))
     except ValueError:
-        # Если не смогли преобразовать — возвращаем 0
         return 0.0
 
-    if P == 0:
-        return 0.0  # защита от деления на ноль
+    if V < 100:
+        return 0.0
 
-    # Доли
-    like_ratio    = L / P
-    comment_ratio = C / P
-    repost_ratio  = R / P
+    # Логарифмируем репосты чтобы убрать взрывной эффект
+    R_adj = math.log10(R + 1) * 10  # масштабируем, чтобы примерно сопоставимо с лайками
 
-    # Взвешенная сумма
-    raw_score = (
-        like_ratio    * 0.35 +
-        comment_ratio * 0.15 +
-        repost_ratio  * 0.5
-    )
+    # Новые веса
+    engagement_score = L * 0.1 + C * 0.3 + R_adj * 0.2
 
-    # Нелинейное масштабирование + подгонка под 10-балльную шкалу
-    viral_score = 10 * (raw_score ** 0.55) * 6.5
+    scale_factor = math.log10(V + 1) ** 0.5
 
-    # Округляем и ограничиваем максимумом 10
-    return round(min(viral_score, 10), 2)
+    raw_score = engagement_score * scale_factor
+    viral_score = min(raw_score / 25000, 10)
 
+    return round(viral_score, 2)
 
 
 
@@ -131,25 +119,39 @@ def register_and_extract(request: str):
             start = end_args + 1
             continue
 
-        i += 1
-        print(f"\n🎞️ Видео #{i}")
-        print(f"👁️ Views: {views}, ❤️ Likes: {likes}, 💬 Comments: {comments}")
-        print(f"🔁 Reposts: {reposts}, 💾 Saves: {saves}")
-        print(f"🧠 ER/View: {er}, 📈 CR/View: {cr}")
-        print(f"📊 Viral Score: {viral_score}/10")
-        print(f"📎 Instagram: https://www.instagram.com/reel/{short_id}")
+        start = html.find('<span class="text-white opacity-30">', start)
+        if start == -1:
+            break
 
-        res.append({
-            "views": views,
-            "likes": likes,
-            "comments": comments,
-            "reposts": reposts,
-            "saves": saves,
-            "er": er,
-            "cr": cr,
-            "short_id": short_id,
-            "viral_score": viral_score
-        })
+        start_args = html.find(">", start) + 1
+        end_args = html.find("<", start_args)
+        args_raw = html[start_args:end_args]
+        args_ = args_raw.split(" ")
+
+        if len(args_) >= 2 and args_[1] == "m":
+            if int(args_[0]) > 1:
+                print(False)
+            else:
+
+                i += 1
+                print(f"\n🎞️ Видео #{i}")
+                print(f"👁️ Views: {views}, ❤️ Likes: {likes}, 💬 Comments: {comments}")
+                print(f"🔁 Reposts: {reposts}, 💾 Saves: {saves}")
+                print(f"🧠 ER/View: {er}, 📈 CR/View: {cr}")
+                print(f"📊 Viral Score: {viral_score}/10")
+                print(f"📎 Instagram: https://www.instagram.com/reel/{short_id}")
+
+                res.append({
+                    "views": views,
+                    "likes": likes,
+                    "comments": comments,
+                    "reposts": reposts,
+                    "saves": saves,
+                    "er": er,
+                    "cr": cr,
+                    "short_id": short_id,
+                    "viral_score": viral_score
+                })
 
         start = end_args + 1
 
