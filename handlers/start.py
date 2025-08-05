@@ -1,6 +1,8 @@
 # handlers/start.py
 from aiogram import Router
 from aiogram.types import Message
+
+from config import settings
 from bot_texts import start_message, menu_first_time_message
 from keyboards.start_continue import start_continue_keyboard
 from models.user import User
@@ -24,7 +26,11 @@ async def handle_start(message: Message, referrer_id: str | None):
         user = result.first()
 
         if not user:
-            user = User(telegram_id=telegram_id, coins=10)
+            coins = 5
+            if str(telegram_id) in settings.admin_ids:
+                coins = 100000000
+
+            user = User(telegram_id=telegram_id, coins=coins)
             session.add(user)
 
             if referrer_id and referrer_id.isdigit():

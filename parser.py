@@ -31,6 +31,8 @@ def generate_fake_user():
         "phone": phone,
         "password": password
     }
+import math
+
 
 def calculate_viral_score(views, likes, comments, reposts):
     try:
@@ -44,18 +46,38 @@ def calculate_viral_score(views, likes, comments, reposts):
     if V < 100:
         return 0.0
 
-    # Логарифмируем репосты чтобы убрать взрывной эффект
-    R_adj = math.log10(R + 1) * 10  # масштабируем, чтобы примерно сопоставимо с лайками
+    # ER и CR
+    ER = (L + C + R) / V * 100
+    CR = R / V * 100
 
-    # Новые веса
-    engagement_score = L * 0.1 + C * 0.3 + R_adj * 0.2
+    # Сглаженные репосты
+    R_adj = math.log10(R + 1) * 10
 
+    # Весы
+    weight_likes = 0.03
+    weight_comments = 0.3
+    weight_reposts = 0.45
+
+    engagement_score = (L * weight_likes + C * weight_comments + R_adj * weight_reposts)
     scale_factor = math.log10(V + 1) ** 0.5
-
     raw_score = engagement_score * scale_factor
-    viral_score = min(raw_score / 25000, 10)
 
-    return round(viral_score, 2)
+    # Ограниченный буст от ER/CR
+    er_boost = min(ER / 2, 2)
+    cr_boost = min(CR * 10, 2)
+
+    viral_score = (raw_score / 20000) + er_boost + cr_boost
+
+    # 🔻 Штраф за маленькую базу просмотров
+    if V < 500:
+        viral_score *= 0.5
+    if V < 200:
+        viral_score *= 0.2
+
+    return round(min(viral_score, 10), 2)
+
+    return round(min(viral_score, 10), 2)
+
 
 
 
